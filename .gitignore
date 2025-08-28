@@ -1,2 +1,3 @@
-data/ 
-!data/example_data.csv 
+data/*.json 
+!data/*.csv 
+!data/*.csv 
