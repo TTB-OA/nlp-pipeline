@@ -1,3 +1,4 @@
 data/*.json 
 !data/*.csv 
 !data/*.csv 
+models/ 
