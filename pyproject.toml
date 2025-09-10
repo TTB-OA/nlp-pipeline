@@ -4,4 +4,21 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "bertopic",
+    "gensim",
+    "hdbscan",
+    "joblib",
+    "nltk",
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "scipy",
+    "sentence-transformers",
+    "streamlit",
+    "top2vec",
+    "torch",
+    "tqdm",
+    "transformers",
+    "umap-learn",
+]
