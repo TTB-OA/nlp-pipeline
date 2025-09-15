@@ -1,24 +1,26 @@
 [project]
 name = "topic-modeling"
 version = "0.1.0"
-description = "Add your description here"
+description = "Topic Modeling, Analysis, and Review of TTB Public Comments"
 readme = "README.md"
-requires-python = ">=3.13"
+license = "MIT"
+requires-python = ">=3.6,<3.10"
 dependencies = [
-    "bertopic",
-    "gensim",
-    "hdbscan",
-    "joblib",
-    "nltk",
-    "numpy",
-    "pandas",
-    "scikit-learn",
-    "scipy",
-    "sentence-transformers",
-    "streamlit",
-    "top2vec",
-    "torch",
-    "tqdm",
-    "transformers",
-    "umap-learn",
+   "numpy>=1.19.5",
+   "pandas>=0.25.3",
+   "plotly>=5.18.0",
+   "streamlit>=1.10.0",
+]
+
+[dependency-groups]
+modeling = [
+    "bertopic>=0.3.4",
+    "hdbscan>=0.8.27",
+    "nltk>=3.6.7",
+    "sentence-transformers>=0.3.4",
+    "top2vec>=1.0.22",
+    "torch>=1.5.1",
+    "tqdm>=4.64.1",
+    "transformers>=4.18.0",
+    "umap-learn>=0.5.7",
 ]
