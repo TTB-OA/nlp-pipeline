@@ -309,3 +309,4 @@ wordcloud==1.9.4
     # via top2vec
 wrapt==1.17.3
     # via smart-open
+plotly 
