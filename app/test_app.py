@@ -8,8 +8,8 @@ from typing import Optional
 import streamlit.components.v1 as components
 
 # --- CONFIG: CSV paths injected by the notebook ---
-DEFAULT_TOPIC_SUMMARY = Path(r"C:\Users\linna\OneDrive\Documents\Python_Dev\topic-modeling\outputs\bertopic_topic_summary.csv")
-DEFAULT_COMMENTS_DF = Path(r"C:\Users\linna\OneDrive\Documents\Python_Dev\topic-modeling\outputs\comments_with_bertopic.csv")
+DEFAULT_TOPIC_SUMMARY = Path(r"C:\Users\linna\OneDrive\Documents\Python_Dev\topic-modeling\outputs\all_bertopic_topic_summary_combined.csv")
+DEFAULT_COMMENTS_DF = Path(r"C:\Users\linna\OneDrive\Documents\Python_Dev\topic-modeling\outputs\all_comments_with_bertopic_combined.csv")
 
 # Basic page config
 st.set_page_config(page_title="Topic Explorer", layout="wide", initial_sidebar_state="expanded")
