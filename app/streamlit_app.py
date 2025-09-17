@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 from pathlib import Path
 import streamlit as st
@@ -7,9 +6,11 @@ import plotly.express as px
 from typing import Optional
 import streamlit.components.v1 as components
 
-# --- CONFIG: CSV paths injected by the notebook ---
-DEFAULT_TOPIC_SUMMARY = Path(r"C:\Users\linna\OneDrive\Documents\Python_Dev\topic-modeling\outputs\all_bertopic_topic_summary_combined.csv")
-DEFAULT_COMMENTS_DF = Path(r"C:\Users\linna\OneDrive\Documents\Python_Dev\topic-modeling\outputs\all_comments_with_bertopic_combined.csv")
+# --- CONFIG: CSV paths using relative paths ---
+# Get the project root (parent of app directory)
+PROJECT_ROOT = Path(__file__).parent.parent
+DEFAULT_TOPIC_SUMMARY = PROJECT_ROOT / "outputs" / "bertopic_topic_summary.csv"
+DEFAULT_COMMENTS_DF = PROJECT_ROOT / "outputs" / "comments_with_bertopic.csv"
 
 # Basic page config
 st.set_page_config(page_title="Topic Explorer", layout="wide", initial_sidebar_state="expanded")
@@ -43,11 +44,16 @@ if TOPIC_NUM_COL is not None:
 
 # detect dominant-topic column in comments (make app amenable to top2vec or bert)
 DOM_COL_CANDIDATES = ["bertopic_dominant_topic", "top2vec_dominant_topic", "dominant_topic", "topic", "topic_num"]
-dom_col = next((c for c in DOM_COL_CANDIDATES if c in comments_df.columns), None)
+if comments_df is not None:
+    dom_col = next((c for c in DOM_COL_CANDIDATES if c in comments_df.columns), None)
+else:
+    dom_col = None
 if dom_col is None:
     dom_col = "bertopic_dominant_topic"
-    comments_df[dom_col] = -1
-comments_df[dom_col] = comments_df[dom_col].fillna(-1).astype(int)
+    if comments_df is not None:
+        comments_df[dom_col] = -1
+if comments_df is not None:
+    comments_df[dom_col] = comments_df[dom_col].fillna(-1).astype(int)
 
 # optional emotion column
 EMOTION_COL = "top_emotion" if "top_emotion" in comments_df.columns else None
@@ -145,7 +151,8 @@ else:
 # --- Update title and browser tab with chosen docket ---
 visible_title = f"Topic Explorer — {chosen_docket}" if chosen_docket and chosen_docket != "(All)" else "Topic Explorer"
 st.title(visible_title)
-components.html(f"<script>document.title = \"{visible_title.replace('\"','\\\"')}\";</script>", height=0)
+safe_title = visible_title.replace('"', '\\"')
+components.html(f'<script>document.title = "{safe_title}";</script>', height=0)
 
 # --- summaries ---
 k1, k2, k3 = st.columns([1,1,2])
@@ -227,10 +234,10 @@ if display_topics.empty:
     st.info("No topic previews match filters.")
 else:
     cols = st.columns(cards_per_row)
-    for i, row in display_topics.iterrows():
-        col = cols[i % cards_per_row]
+    for idx, (_, row) in enumerate(display_topics.iterrows()):
+        col = cols[idx % int(cards_per_row)]
         with col:
-            tnum = int(row[TOPIC_NUM_COL]) if TOPIC_NUM_COL else i
+            tnum = int(row[TOPIC_NUM_COL]) if TOPIC_NUM_COL else idx
             # count from filtered set (reflects current filters)
             cnt = int(topic_counts_map.get(tnum, 0))
             header = f"Topic {tnum} — {cnt} docs"
