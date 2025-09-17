@@ -9,8 +9,8 @@ import streamlit.components.v1 as components
 # --- CONFIG: CSV paths using relative paths ---
 # Get the project root (parent of app directory)
 PROJECT_ROOT = Path(__file__).parent.parent
-DEFAULT_TOPIC_SUMMARY = PROJECT_ROOT / "outputs" / "bertopic_topic_summary.csv"
-DEFAULT_COMMENTS_DF = PROJECT_ROOT / "outputs" / "comments_with_bertopic.csv"
+DEFAULT_TOPIC_SUMMARY = PROJECT_ROOT / "outputs" / "all_bertopic_topic_summary_combined.csv"
+DEFAULT_COMMENTS_DF = PROJECT_ROOT / "outputs" / "all_comments_with_bertopic_combined.csv" 
 
 # Basic page config
 st.set_page_config(page_title="Topic Explorer", layout="wide", initial_sidebar_state="expanded")
