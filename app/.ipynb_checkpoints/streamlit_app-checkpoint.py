@@ -154,6 +154,92 @@ st.title(visible_title)
 safe_title = visible_title.replace('"', '\\"')
 components.html(f'<script>document.title = "{safe_title}";</script>', height=0)
 
+# --- Display Mass Comment examples + counts
+
+# find mass comments:
+mass_col = "comment_title" if "comment_title" in comments_df.columns else None
+
+if mass_col:
+    import re
+
+    st.subheader("Mass Comment Example Text")
+    # ensure display reacts to sidebar filters/search
+    mg = filtered.copy()
+    mg[mass_col] = mg[mass_col].fillna("")
+
+    # get mass label (e.g., "Mass Comment 1") or None
+    def _extract_mass_label(val):
+        m = re.search(r"(?i)\b(Mass\s*Comment\s*\d+)\b", str(val))
+        return m.group(1).strip() if m else None
+
+    mg["__mass_label"] = mg[mass_col].apply(_extract_mass_label)
+
+    # keep only rows that are recognized as mass comments
+    mg = mg[mg["__mass_label"].notna()].copy()
+
+    if mg.empty:
+        st.info("No mass comments found in the current filters.")
+    else:
+        # group by mass label and docket
+        group_cols = ["__mass_label"]
+        if docket_col:
+            group_cols.append(docket_col)
+
+        # Prefer using mass_count (calculated in topic modeling step before deduplication).
+        if "mass_count" in mg.columns:
+            agg = (
+                mg.groupby(group_cols)
+                .agg(
+                    count=("mass_count", "max"),  
+                    sample=("comment_text", lambda s: next((x for x in s.dropna().tolist()), "")),
+                )
+                .reset_index()
+            )
+        else:
+            # fallback
+            count_col = "comment_id" if "comment_id" in mg.columns else mg.columns[0]
+            agg = (
+                mg.groupby(group_cols)
+                .agg(
+                    count=(count_col, "count"),
+                    sample=("comment_text", lambda s: next((x for x in s.dropna().tolist()), "")),
+                )
+                .reset_index()
+            )
+
+        # iterate rows and display header: "Mass Comment N (DOCKET_ID) — X comments"
+        for idx, r in agg.iterrows():
+            label = str(r["__mass_label"])
+            docket_val = str(r[docket_col]) if docket_col and pd.notna(r.get(docket_col)) else "nodocket"
+            cnt = int(r["count"])
+            header = f"{label} ({docket_val}) — {cnt} comments"
+            st.markdown(f"**{header}**")
+
+            sample = str(r["sample"])
+            if sample:
+                st.caption(sample[:500] + ("..." if len(sample) > 500 else ""))
+
+            # unique key using mass label + docket + index
+            safe_label = re.sub(r"[^\w\-]+", "_", label)
+            safe_docket = re.sub(r"[^\w\-]+", "_", docket_val)
+            btn_key = f"mass_view_{safe_label}_{safe_docket}_{idx}"
+
+            if st.button(f"View {label} — all {cnt} comments", key=btn_key):
+                # show all matching rows from the already-filtered mass-group dataframe
+                sub = mg[mg["__mass_label"] == label].copy()
+                if docket_col and docket_val != "nodocket":
+                    sub = sub[sub[docket_col].astype(str) == docket_val]
+                display_cols = ["comment_id", "comment_text"] if "comment_id" in sub.columns else ["comment_text"]
+                if EMOTION_COL and EMOTION_COL in sub.columns:
+                    display_cols += [EMOTION_COL]
+                st.dataframe(sub[display_cols].head(2000), use_container_width=True)
+
+            st.markdown("")  # spacer
+else:
+    st.info("No 'comment_title' column detected. To enable this panel, add a 'comment_title' column that contains values like 'Mass Comment 1' among other possible titles.")
+
+# --- End Mass Comment Block (Dev) ---
+
 # --- summaries ---
 k1, k2, k3 = st.columns([1,1,2])
 k1.metric("Filtered comments", f"{len(filtered):,}")
@@ -234,30 +320,42 @@ if display_topics.empty:
     st.info("No topic previews match filters.")
 else:
     cols = st.columns(cards_per_row)
-    for idx, (_, row) in enumerate(display_topics.iterrows()):
-        col = cols[idx % int(cards_per_row)]
-        with col:
-            tnum = int(row[TOPIC_NUM_COL]) if TOPIC_NUM_COL else idx
-            # count from filtered set (reflects current filters)
-            cnt = int(topic_counts_map.get(tnum, 0))
-            header = f"Topic {tnum} — {cnt} docs"
-            # show header (topic number + count)
-            st.markdown(f"### {header}")
-            # green subhead with top words
-            top_words = row.get(TOP_WORDS_COL, row.get("top_words", ""))
-            if top_words:
-                st.markdown(f"<div style='color:green;margin-bottom:6px'>{top_words}</div>", unsafe_allow_html=True)
-            if show_sample_in_cards:
-                sample = row.get(SAMPLE_COMMENTS_COL, row.get("sample_comments", ""))
-                if sample:
-                    st.caption(sample[:300] + ("..." if len(sample) > 300 else ""))
-            if st.button(f"View comments (topic {tnum})", key=f"view_{tnum}"):
-                sub = filtered[filtered[dom_col] == tnum]
-                if sub.empty:
-                    st.info("No comments for this topic (in current filters).")
-                else:
-                    st.write(f"Showing {len(sub)} comments for topic {tnum}")
-                    st.dataframe(sub[["comment_id","comment_text"]].head(200), use_container_width=True)
+for i, row in display_topics.iterrows():
+    col = cols[i % cards_per_row]
+    with col:
+        tnum = int(row[TOPIC_NUM_COL]) if TOPIC_NUM_COL else i
+        # count from filtered set (reflects current filters)
+        cnt = int(topic_counts_map.get(tnum, 0))
+        header = f"Topic {tnum} — {cnt} docs"
+        # show header (topic number + count)
+        st.markdown(f"### {header}")
+        # green subhead with top words
+        top_words = row.get(TOP_WORDS_COL, row.get("top_words", ""))
+        if top_words:
+            st.markdown(f"<div style='color:green;margin-bottom:6px'>{top_words}</div>", unsafe_allow_html=True)
+        if show_sample_in_cards:
+            sample = row.get(SAMPLE_COMMENTS_COL, row.get("sample_comments", ""))
+            if sample:
+                st.caption(sample[:300] + ("..." if len(sample) > 300 else ""))
+
+        # prepare a unique key using tnum + docket_id + loop index
+        docket_id_val = row.get("docket_id", "nodocket")
+        safe_docket = str(docket_id_val).replace(" ", "_")
+        btn_key = f"view_{tnum}_{safe_docket}_{i}"
+
+        if st.button(f"View comments (topic {tnum})", key=btn_key):
+            sub = filtered[filtered[dom_col] == tnum]
+            # further filter by docket if available
+            if docket_col and docket_id_val != "nodocket":
+                sub = sub[sub[docket_col] == docket_id_val]
+            if sub.empty:
+                st.info("No comments for this topic (in current filters).")
+            else:
+                st.write(f"Showing {len(sub)} comments for topic {tnum} in docket {docket_id_val}")
+                display_cols = ["comment_id","comment_text"]
+                if EMOTION_COL:
+                    display_cols += [EMOTION_COL]
+                st.dataframe(sub[display_cols].head(200), use_container_width=True)
 
 st.markdown("---")
 
