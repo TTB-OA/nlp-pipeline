@@ -234,30 +234,42 @@ if display_topics.empty:
     st.info("No topic previews match filters.")
 else:
     cols = st.columns(cards_per_row)
-    for idx, (_, row) in enumerate(display_topics.iterrows()):
-        col = cols[idx % int(cards_per_row)]
-        with col:
-            tnum = int(row[TOPIC_NUM_COL]) if TOPIC_NUM_COL else idx
-            # count from filtered set (reflects current filters)
-            cnt = int(topic_counts_map.get(tnum, 0))
-            header = f"Topic {tnum} — {cnt} docs"
-            # show header (topic number + count)
-            st.markdown(f"### {header}")
-            # green subhead with top words
-            top_words = row.get(TOP_WORDS_COL, row.get("top_words", ""))
-            if top_words:
-                st.markdown(f"<div style='color:green;margin-bottom:6px'>{top_words}</div>", unsafe_allow_html=True)
-            if show_sample_in_cards:
-                sample = row.get(SAMPLE_COMMENTS_COL, row.get("sample_comments", ""))
-                if sample:
-                    st.caption(sample[:300] + ("..." if len(sample) > 300 else ""))
-            if st.button(f"View comments (topic {tnum})", key=f"view_{tnum}"):
-                sub = filtered[filtered[dom_col] == tnum]
-                if sub.empty:
-                    st.info("No comments for this topic (in current filters).")
-                else:
-                    st.write(f"Showing {len(sub)} comments for topic {tnum}")
-                    st.dataframe(sub[["comment_id","comment_text"]].head(200), use_container_width=True)
+for i, row in display_topics.iterrows():
+    col = cols[i % cards_per_row]
+    with col:
+        tnum = int(row[TOPIC_NUM_COL]) if TOPIC_NUM_COL else i
+        # count from filtered set (reflects current filters)
+        cnt = int(topic_counts_map.get(tnum, 0))
+        header = f"Topic {tnum} — {cnt} docs"
+        # show header (topic number + count)
+        st.markdown(f"### {header}")
+        # green subhead with top words
+        top_words = row.get(TOP_WORDS_COL, row.get("top_words", ""))
+        if top_words:
+            st.markdown(f"<div style='color:green;margin-bottom:6px'>{top_words}</div>", unsafe_allow_html=True)
+        if show_sample_in_cards:
+            sample = row.get(SAMPLE_COMMENTS_COL, row.get("sample_comments", ""))
+            if sample:
+                st.caption(sample[:300] + ("..." if len(sample) > 300 else ""))
+
+        # prepare a unique key using tnum + docket_id + loop index
+        docket_id_val = row.get("docket_id", "nodocket")
+        safe_docket = str(docket_id_val).replace(" ", "_")
+        btn_key = f"view_{tnum}_{safe_docket}_{i}"
+
+        if st.button(f"View comments (topic {tnum})", key=btn_key):
+            sub = filtered[filtered[dom_col] == tnum]
+            # further filter by docket if available
+            if docket_col and docket_id_val != "nodocket":
+                sub = sub[sub[docket_col] == docket_id_val]
+            if sub.empty:
+                st.info("No comments for this topic (in current filters).")
+            else:
+                st.write(f"Showing {len(sub)} comments for topic {tnum} in docket {docket_id_val}")
+                display_cols = ["comment_id","comment_text"]
+                if EMOTION_COL:
+                    display_cols += [EMOTION_COL]
+                st.dataframe(sub[display_cols].head(200), use_container_width=True)
 
 st.markdown("---")
 
