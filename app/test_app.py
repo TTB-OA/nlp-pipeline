@@ -306,8 +306,12 @@ elif TOPIC_NUM_COL:
 
 display_topics = display_topics.head(30).reset_index(drop=True)
 
-# prepare per-topic doc counts from the filtered set
-topic_counts_map = filtered[dom_col].value_counts().to_dict()
+if "comment_id" in filtered.columns:
+    per_topic_docket_series = filtered.groupby([dom_col, docket_col])["comment_id"].nunique()
+    per_topic_docket_map = {(int(k[0]), str(k[1])): int(v) for k, v in per_topic_docket_series.items()}
+else:
+    per_topic_docket_series = filtered.groupby([dom_col, docket_col]).size()
+    per_topic_docket_map = {(int(k[0]), str(k[1])): int(v) for k, v in per_topic_docket_series.items()}
 
 if display_topics.empty:
     st.info("No topic previews match filters.")
@@ -317,10 +321,9 @@ for i, row in display_topics.iterrows():
     col = cols[i % cards_per_row]
     with col:
         tnum = int(row[TOPIC_NUM_COL]) if TOPIC_NUM_COL else i
-        # count from filtered set (reflects current filters)
-        cnt = int(topic_counts_map.get(tnum, 0))
+        docket_id_val = row.get("docket_id", "nodocket")
+        cnt = int(per_topic_docket_map.get((tnum, str(docket_id_val)), 0))
         header = f"Topic {tnum} — {cnt} docs"
-        # show header (topic number + count)
         st.markdown(f"### {header}")
         # green subhead with top words
         top_words = row.get(TOP_WORDS_COL, row.get("top_words", ""))
