@@ -264,7 +264,7 @@ if mass_col:
             safe_docket = re.sub(r"[^\w\-]+", "_", docket_val)
             btn_key = f"mass_view_{safe_label}_{safe_docket}_{idx}"
 
-            if st.button(f"View {label} — all {cnt} comments", key=btn_key):
+            if st.button(f"View {label} — representing {cnt} comments", key=btn_key):
                 # show all matching rows from the already-filtered mass-group dataframe
                 sub = mg[mg["__mass_label"] == label].copy()
                 if docket_col and docket_val != "nodocket":
