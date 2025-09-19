@@ -147,6 +147,46 @@ visible_title = f"Topic Explorer — {chosen_docket}" if chosen_docket and chose
 st.title(visible_title)
 components.html(f"<script>document.title = \"{visible_title.replace('\"','\\\"')}\";</script>", height=0)
 
+# --- summaries ---
+k1, k2, k3 = st.columns([1,1,2])
+k1.metric("Filtered comments", f"{len(filtered):,}")
+k2.metric("Topics represented", f"{filtered[dom_col].nunique()}")
+top_em = filtered[EMOTION_COL].value_counts().idxmax() if EMOTION_COL and not filtered[EMOTION_COL].empty else "N/A"
+k3.metric("Top emotion", top_em)
+
+st.markdown("---")
+
+# --- Charts: topic sizes and emotion distribution (responds to filtering) ---
+c1, c2 = st.columns([2,1])
+
+with c1:
+    st.subheader("Topic sizes")
+    topic_counts = filtered[dom_col].value_counts().reset_index()
+    topic_counts.columns = ["topic","count"]
+    topic_counts["label"] = topic_counts["topic"].map(lambda t: topic_label_map.get(int(t), f"Topic {t}"))
+    if not topic_counts.empty:
+        fig = px.bar(topic_counts.sort_values("count"), x="count", y="label", orientation="h", text="count", height=420)
+        fig.update_layout(xaxis_title="Number of documents", yaxis_title="Topic", margin=dict(l=10,r=10,t=40,b=10))
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("No topics to display (check filters).")
+
+with c2:
+    st.subheader("Emotion distribution")
+    if EMOTION_COL:
+        ec = filtered[EMOTION_COL].value_counts().reset_index()
+        ec.columns = ["emotion","count"]
+        if not ec.empty:
+            fig2 = px.pie(ec, names="emotion", values="count")
+            fig2.update_traces(textposition='inside', textinfo='percent+label')
+            st.plotly_chart(fig2, use_container_width=True)
+        else:
+            st.info("No emotion data in filtered set.")
+    else:
+        st.info("No emotion column available.")
+
+st.markdown("---")
+
 # --- Display Mass Comment examples + counts
 
 # find mass comments:
@@ -232,47 +272,6 @@ else:
     st.info("No 'comment_title' column detected. To enable this panel, add a 'comment_title' column that contains values like 'Mass Comment 1' among other possible titles.")
 
 # --- End Mass Comment Block (Dev) ---
-
-
-# --- summaries ---
-k1, k2, k3 = st.columns([1,1,2])
-k1.metric("Filtered comments", f"{len(filtered):,}")
-k2.metric("Topics represented", f"{filtered[dom_col].nunique()}")
-top_em = filtered[EMOTION_COL].value_counts().idxmax() if EMOTION_COL and not filtered[EMOTION_COL].empty else "N/A"
-k3.metric("Top emotion", top_em)
-
-st.markdown("---")
-
-# --- Charts: topic sizes and emotion distribution (responds to filtering) ---
-c1, c2 = st.columns([2,1])
-
-with c1:
-    st.subheader("Topic sizes")
-    topic_counts = filtered[dom_col].value_counts().reset_index()
-    topic_counts.columns = ["topic","count"]
-    topic_counts["label"] = topic_counts["topic"].map(lambda t: topic_label_map.get(int(t), f"Topic {t}"))
-    if not topic_counts.empty:
-        fig = px.bar(topic_counts.sort_values("count"), x="count", y="label", orientation="h", text="count", height=420)
-        fig.update_layout(xaxis_title="Number of documents", yaxis_title="Topic", margin=dict(l=10,r=10,t=40,b=10))
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("No topics to display (check filters).")
-
-with c2:
-    st.subheader("Emotion distribution")
-    if EMOTION_COL:
-        ec = filtered[EMOTION_COL].value_counts().reset_index()
-        ec.columns = ["emotion","count"]
-        if not ec.empty:
-            fig2 = px.pie(ec, names="emotion", values="count")
-            fig2.update_traces(textposition='inside', textinfo='percent+label')
-            st.plotly_chart(fig2, use_container_width=True)
-        else:
-            st.info("No emotion data in filtered set.")
-    else:
-        st.info("No emotion column available.")
-
-st.markdown("---")
 
 # --- Topic previews (show topic number + count in filtered set; green top-words subhead) ---
 st.subheader("Topic previews")
