@@ -313,8 +313,12 @@ elif TOPIC_NUM_COL:
 
 display_topics = display_topics.head(30).reset_index(drop=True)
 
-# prepare per-topic doc counts from the filtered set
-topic_counts_map = filtered[dom_col].value_counts().to_dict()
+if "comment_id" in filtered.columns:
+    per_topic_docket_series = filtered.groupby([dom_col, docket_col])["comment_id"].nunique()
+    per_topic_docket_map = {(int(k[0]), str(k[1])): int(v) for k, v in per_topic_docket_series.items()}
+else:
+    per_topic_docket_series = filtered.groupby([dom_col, docket_col]).size()
+    per_topic_docket_map = {(int(k[0]), str(k[1])): int(v) for k, v in per_topic_docket_series.items()}
 
 if display_topics.empty:
     st.info("No topic previews match filters.")
