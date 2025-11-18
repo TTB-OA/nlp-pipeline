@@ -163,10 +163,32 @@ with c1:
     st.subheader("Topic sizes")
     topic_counts = filtered[dom_col].value_counts().reset_index()
     topic_counts.columns = ["topic","count"]
-    topic_counts["label"] = topic_counts["topic"].map(lambda t: topic_label_map.get(int(t), f"Topic {t}"))
-    if not topic_counts.empty:
-        fig = px.bar(topic_counts.sort_values("count"), x="count", y="label", orientation="h", text="count", height=420)
-        fig.update_layout(xaxis_title="Number of documents", yaxis_title="Topic", margin=dict(l=10,r=10,t=40,b=10))
+
+    ###MADE CHANGES HERE###
+
+    merged = topic_counts.merge(
+        topic_summary[[TOPIC_NUM_COL, TOP_WORDS_COL, "docket_id"]],
+        left_on="topic", right_on=TOPIC_NUM_COL,
+        how="left"
+    )
+
+    merged["label"] = merged.apply(
+        lambda row: f"Topic {row[TOPIC_NUM_COL]}: {row[TOP_WORDS_COL]} ({row['docket_id']})"
+        if pd.notnull(row[TOP_WORDS_COL]) else f"Topic {row['topic']}",
+        axis=1
+    )
+
+    if not merged.empty:
+        fig = px.bar(
+            merged.sort_values("count"),
+            x="count", y="label",
+            orientation="h", text="count", height=420
+        )
+        fig.update_layout(
+            xaxis_title="Number of documents",
+            yaxis_title="Topic",
+            margin=dict(l=10,r=10,t=40,b=10)
+        )
         st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("No topics to display (check filters).")
