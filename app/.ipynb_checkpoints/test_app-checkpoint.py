@@ -81,7 +81,7 @@ else:
     df_for_topics = df_initial
 
 # 3) topics multi-select (choices come from docket+search filtered rows)
-all_topics = sorted(set(df_for_topics[dom_col].unique().tolist()))
+all_topics = sorted(set(df_for_topics[dom_col].unique().tolist())) #### CHANGED THIS from all_topics = sorted(comments_df[dom_col].unique().tolist()) ####
 topic_choices = ["All"] + [str(t) for t in all_topics if t != -1] + (["Noise"] if -1 in all_topics else [])
 selected_topics = st.sidebar.multiselect("Topics (multi-select)", options=topic_choices, default=["All"])
 
@@ -164,10 +164,14 @@ with c1:
     topic_counts = filtered[dom_col].value_counts().reset_index()
     topic_counts.columns = ["topic","count"]
 
-    ###MADE CHANGES HERE###
+    ts = topic_summary.copy()
+    if docket_col and chosen_docket != "(All)":
+        ts = ts[ts["docket_id"].astype(str) == chosen_docket]
+
+    ### MADE CHANGES HERE - updated c1 labels to show docket and topic info ###
 
     merged = topic_counts.merge(
-        topic_summary[[TOPIC_NUM_COL, TOP_WORDS_COL, "docket_id"]],
+        ts[[TOPIC_NUM_COL, TOP_WORDS_COL, "docket_id"]],
         left_on="topic", right_on=TOPIC_NUM_COL,
         how="left"
     )
@@ -298,6 +302,13 @@ else:
 # --- Topic previews (show topic number + count in filtered set; green top-words subhead) ---
 st.subheader("Topic previews")
 display_topics = topic_summary.copy()
+
+#### CHANGE HERE - fix card display to exclude cards for unselected dockets #####
+if docket_col and chosen_docket != "(All)":
+    display_topics = display_topics[
+        display_topics[docket_col].astype(str) == chosen_docket
+    ]
+#### end change ####
 
 # restrict to topics that appear in the docket/search-filtered set
 topics_in_filtered = set(filtered[dom_col].unique().tolist())

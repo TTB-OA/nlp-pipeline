@@ -171,10 +171,14 @@ with c1:
     topic_counts = filtered[dom_col].value_counts().reset_index()
     topic_counts.columns = ["topic","count"]
 
+    ts = topic_summary.copy()
+    if docket_col and chosen_docket != "(All)":
+        ts = ts[ts["docket_id"].astype(str) == chosen_docket]
+
     ### MADE CHANGES HERE - updated c1 labels to show docket and topic info ###
 
     merged = topic_counts.merge(
-        topic_summary[[TOPIC_NUM_COL, TOP_WORDS_COL, "docket_id"]],
+        ts[[TOPIC_NUM_COL, TOP_WORDS_COL, "docket_id"]],
         left_on="topic", right_on=TOPIC_NUM_COL,
         how="left"
     )
@@ -200,13 +204,6 @@ with c1:
     else:
         st.info("No topics to display (check filters).")
     
-    # topic_counts["label"] = topic_counts["topic"].map(lambda t: topic_label_map.get(int(t), f"Topic {t}"))
-    # if not topic_counts.empty:
-    #     fig = px.bar(topic_counts.sort_values("count"), x="count", y="label", orientation="h", text="count", height=420)
-    #     fig.update_layout(xaxis_title="Number of documents", yaxis_title="Topic", margin=dict(l=10,r=10,t=40,b=10))
-    #     st.plotly_chart(fig, use_container_width=True)
-    # else:
-    #     st.info("No topics to display (check filters).")
 
 with c2:
     st.subheader("Emotion distribution")
@@ -313,6 +310,13 @@ else:
 # --- Topic previews (show topic number + count in filtered set; green top-words subhead) ---
 st.subheader("Topic previews")
 display_topics = topic_summary.copy()
+
+#### CHANGE HERE - fix card display to exclude cards for unselected dockets #####
+if docket_col and chosen_docket != "(All)":
+    display_topics = display_topics[
+        display_topics[docket_col].astype(str) == chosen_docket
+    ]
+#### end change ####
 
 # restrict to topics that appear in the docket/search-filtered set
 topics_in_filtered = set(filtered[dom_col].unique().tolist())
