@@ -356,7 +356,7 @@ for i, row in display_topics.iterrows():
         tnum = int(row[TOPIC_NUM_COL]) if TOPIC_NUM_COL else i
         docket_id_val = row.get("docket_id", "nodocket")
         cnt = int(per_topic_docket_map.get((tnum, str(docket_id_val)), 0))
-        header = f"Topic {tnum} — {cnt} docs"
+        header = f"Topic {tnum} — {cnt} Documents"
         st.markdown(f"### {header}")
         # green subhead with top words
         top_words = row.get(TOP_WORDS_COL, row.get("top_words", ""))
