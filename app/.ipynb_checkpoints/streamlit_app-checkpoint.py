@@ -168,8 +168,16 @@ c1, c2 = st.columns([2,1])
 
 with c1:
     st.subheader("Topic sizes")
-    topic_counts = filtered[dom_col].value_counts().reset_index()
-    topic_counts.columns = ["topic","count"]
+    topic_counts = (
+    filtered
+    .groupby([dom_col, docket_col])
+    .size()
+    .reset_index(name="count")
+    )
+    topic_counts.rename(
+        columns={dom_col: "topic", docket_col: "docket_id"},
+        inplace=True
+    )
 
     ts = topic_summary.copy()
     if docket_col and chosen_docket != "(All)":
@@ -179,7 +187,8 @@ with c1:
 
     merged = topic_counts.merge(
         ts[[TOPIC_NUM_COL, TOP_WORDS_COL, "docket_id"]],
-        left_on="topic", right_on=TOPIC_NUM_COL,
+        left_on=["topic", "docket_id"],
+        right_on=[TOPIC_NUM_COL, "docket_id"],
         how="left"
     )
 
