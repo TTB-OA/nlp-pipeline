@@ -145,7 +145,9 @@ else:
 # --- Update title and browser tab with chosen docket ---
 visible_title = f"Topic Explorer — {chosen_docket}" if chosen_docket and chosen_docket != "(All)" else "Topic Explorer"
 st.title(visible_title)
-components.html(f"<script>document.title = \"{visible_title.replace('\"','\\\"')}\";</script>", height=0)
+# components.html(f'<script>document.title = "{visible_title.replace('\"','\\\"')}\";</script>', height=0) WATCH THIS
+safe_title = visible_title.replace('"', '\\"')
+components.html(f'<script>document.title = "{safe_title}";</script>', height=0)
 
 # --- summaries ---
 k1, k2, k3 = st.columns([1,1,2])
