@@ -6,9 +6,11 @@ import plotly.express as px
 from typing import Optional
 import streamlit.components.v1 as components
 
-# --- CONFIG: CSV paths injected by the notebook ---
-DEFAULT_TOPIC_SUMMARY = Path(r"C:\Users\linna\OneDrive\Documents\Python_Dev\topic-modeling\outputs\all_bertopic_topic_summary_combined.csv")
-DEFAULT_COMMENTS_DF = Path(r"C:\Users\linna\OneDrive\Documents\Python_Dev\topic-modeling\outputs\all_comments_with_bertopic_combined.csv")
+# --- CONFIG: CSV paths using relative paths ---
+# Get the project root (parent of app directory)
+PROJECT_ROOT = Path(__file__).parent.parent
+DEFAULT_TOPIC_SUMMARY = PROJECT_ROOT / "outputs" / "all_bertopic_topic_summary_combined.csv"
+DEFAULT_COMMENTS_DF = PROJECT_ROOT / "outputs" / "all_comments_with_bertopic_combined.csv" 
 
 # Basic page config
 st.set_page_config(page_title="Topic Explorer", layout="wide", initial_sidebar_state="expanded")

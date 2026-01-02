@@ -44,16 +44,11 @@ if TOPIC_NUM_COL is not None:
 
 # detect dominant-topic column in comments (make app amenable to top2vec or bert)
 DOM_COL_CANDIDATES = ["bertopic_dominant_topic", "top2vec_dominant_topic", "dominant_topic", "topic", "topic_num"]
-if comments_df is not None:
-    dom_col = next((c for c in DOM_COL_CANDIDATES if c in comments_df.columns), None)
-else:
-    dom_col = None
+dom_col = next((c for c in DOM_COL_CANDIDATES if c in comments_df.columns), None)
 if dom_col is None:
     dom_col = "bertopic_dominant_topic"
-    if comments_df is not None:
-        comments_df[dom_col] = -1
-if comments_df is not None:
-    comments_df[dom_col] = comments_df[dom_col].fillna(-1).astype(int)
+    comments_df[dom_col] = -1
+comments_df[dom_col] = comments_df[dom_col].fillna(-1).astype(int)
 
 # optional emotion column
 EMOTION_COL = "top_emotion" if "top_emotion" in comments_df.columns else None
@@ -82,12 +77,12 @@ if chosen_docket and chosen_docket != "(All)" and docket_col:
     df_initial = df_initial[df_initial[docket_col].astype(str) == chosen_docket]
 if keyword:
     kw = keyword.lower()
-    df_for_topics = df_initial[df_initial.apply(lambda r: kw in str(r.get("comment_text","")).lower() or kw in str(r.get("sample_comments","")).lower(), axis=1)]
+    df_for_topics = df_initial[df_initial.apply(lambda r: kw in str(r.get("text","")).lower() or kw in str(r.get("sample_comments","")).lower(), axis=1)]
 else:
     df_for_topics = df_initial
 
 # 3) topics multi-select (choices come from docket+search filtered rows)
-all_topics = sorted(set(df_for_topics[dom_col].unique().tolist()))
+all_topics = sorted(set(df_for_topics[dom_col].unique().tolist())) #### CHANGED THIS from all_topics = sorted(comments_df[dom_col].unique().tolist()) ####
 topic_choices = ["All"] + [str(t) for t in all_topics if t != -1] + (["Noise"] if -1 in all_topics else [])
 selected_topics = st.sidebar.multiselect("Topics (multi-select)", options=topic_choices, default=["All"])
 
@@ -118,7 +113,7 @@ if chosen_docket and chosen_docket != "(All)" and docket_col:
 # keyword search
 if keyword:
     kw = keyword.lower()
-    filtered = filtered[filtered.apply(lambda r: kw in str(r.get("comment_text","")).lower() or kw in str(r.get("sample_comments","")).lower(), axis=1)]
+    filtered = filtered[filtered.apply(lambda r: kw in str(r.get("text","")).lower() or kw in str(r.get("sample_comments","")).lower(), axis=1)]
 
 # topic selection (honor "Noise" sentinel)
 if not ("All" in selected_topics or len(selected_topics) == 0):
@@ -151,8 +146,7 @@ else:
 # --- Update title and browser tab with chosen docket ---
 visible_title = f"Topic Explorer — {chosen_docket}" if chosen_docket and chosen_docket != "(All)" else "Topic Explorer"
 st.title(visible_title)
-safe_title = visible_title.replace('"', '\\"')
-components.html(f'<script>document.title = "{safe_title}";</script>', height=0)
+components.html(f"<script>document.title = \"{visible_title.replace('\"','\\\"')}\";</script>", height=0)
 
 # --- summaries ---
 k1, k2, k3 = st.columns([1,1,2])
@@ -212,7 +206,6 @@ with c1:
         st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("No topics to display (check filters).")
-    
 
 with c2:
     st.subheader("Emotion distribution")
@@ -267,7 +260,7 @@ if mass_col:
                 mg.groupby(group_cols)
                 .agg(
                     count=("mass_count", "max"),  
-                    sample=("comment_text", lambda s: next((x for x in s.dropna().tolist()), "")),
+                    sample=("text", lambda s: next((x for x in s.dropna().tolist()), "")),
                 )
                 .reset_index()
             )
@@ -278,7 +271,7 @@ if mass_col:
                 mg.groupby(group_cols)
                 .agg(
                     count=(count_col, "count"),
-                    sample=("comment_text", lambda s: next((x for x in s.dropna().tolist()), "")),
+                    sample=("text", lambda s: next((x for x in s.dropna().tolist()), "")),
                 )
                 .reset_index()
             )
@@ -305,7 +298,7 @@ if mass_col:
                 sub = mg[mg["__mass_label"] == label].copy()
                 if docket_col and docket_val != "nodocket":
                     sub = sub[sub[docket_col].astype(str) == docket_val]
-                display_cols = ["comment_id", "comment_text"] if "comment_id" in sub.columns else ["comment_text"]
+                display_cols = ["comment_id", "text"] if "comment_id" in sub.columns else ["text"]
                 if EMOTION_COL and EMOTION_COL in sub.columns:
                     display_cols += [EMOTION_COL]
                 st.dataframe(sub[display_cols].head(2000), use_container_width=True)
@@ -398,7 +391,7 @@ for i, row in display_topics.iterrows():
                 st.info("No comments for this topic (in current filters).")
             else:
                 st.write(f"Showing {len(sub)} comments for topic {tnum} in docket {docket_id_val}")
-                display_cols = ["comment_id","comment_text"]
+                display_cols = ["comment_id","text"]
                 if EMOTION_COL:
                     display_cols += [EMOTION_COL]
                 st.dataframe(sub[display_cols].head(200), use_container_width=True)
@@ -407,7 +400,7 @@ st.markdown("---")
 
 # --- View/download comments ---
 st.subheader("Browse filtered comments")
-preview_cols = ["comment_id","comment_text", dom_col]
+preview_cols = ["comment_id","text", dom_col]
 if EMOTION_COL:
     preview_cols += [EMOTION_COL, "top_emotion_score"] if "top_emotion_score" in comments_df.columns else [EMOTION_COL]
 available_cols = [c for c in preview_cols if c in filtered.columns]
